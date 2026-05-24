@@ -1,0 +1,57 @@
+template header
+deo
+maxPopravkaProcenat
+dozvoliPopravku
+kritican
+
+package rules;
+
+import com.sbnz.vehicleassessment.model.OstecenoVozilo;
+import com.sbnz.vehicleassessment.model.Indikator;
+import com.sbnz.vehicleassessment.model.Eskalacija;
+import com.sbnz.vehicleassessment.model.PromenaIntervencije;
+import com.sbnz.vehicleassessment.model.enums.TipIntervencije;
+import com.sbnz.vehicleassessment.model.enums.TipIndikatora;
+import com.sbnz.vehicleassessment.model.enums.TipEskalacije;
+
+template "RepairPolicy"
+
+rule "Politika popravke - @{deo}"
+    salience 60
+when
+    $d : OstecenoVozilo(naziv == "@{deo}", tipIntervencije == TipIntervencije.POPRAVKA,
+                        $procenatOstecenja : procenatOstecenja)
+    eval((($procenatOstecenja > 1.0 ? $procenatOstecenja / 100.0 : $procenatOstecenja)
+          > @{maxPopravkaProcenat}))
+    not PromenaIntervencije(deo == "@{deo}")
+then
+    insert(new PromenaIntervencije(
+        "@{deo}",
+        TipIntervencije.POPRAVKA,
+        TipIntervencije.ZAMENA,
+        "Stepen ostecenja prelazi dozvoljeni prag za popravku"));
+end
+
+rule "Zabranjena popravka - @{deo}"
+    salience 60
+when
+    $d : OstecenoVozilo(naziv == "@{deo}", tipIntervencije == TipIntervencije.POPRAVKA)
+    eval(@{dozvoliPopravku} == false)
+then
+    insert(new Eskalacija(TipEskalacije.STRUCNA_PROVERA,
+        "Popravka dela nije dozvoljena: @{deo}"));
+end
+
+rule "Kritican deo - @{deo}"
+    salience 60
+when
+    $d : OstecenoVozilo(naziv == "@{deo}")
+    eval(@{kritican} == true)
+    not Indikator(tip == TipIndikatora.KRITICNA_KOMPONENTA, deo == "@{deo}")
+then
+    insert(new Indikator(TipIndikatora.KRITICNA_KOMPONENTA, "@{deo}"));
+    insert(new Eskalacija(TipEskalacije.STRUCNA_PROVERA,
+        "Ostecen kritican deo vozila: @{deo}"));
+end
+
+end template

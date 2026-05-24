@@ -1,0 +1,90 @@
+<div class="page-header">
+  <div>
+    <h1>Provera prevara (CEP)</h1>
+    <p>Pošaljite niz zahteva za odštetu — Drools CEP pravila kreiraju upozorenja na nivou vlasnika i vozila.</p>
+  </div>
+  <div class="actions" style="margin: 0;">
+    <button type="button" class="btn btn-secondary" (click)="fillExample()">Primer podataka</button>
+  </div>
+</div>
+
+@if (errorMsg()) {
+  <div class="error-banner">{{ errorMsg() }}</div>
+}
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+  <div class="card">
+    <h2 class="card-title">
+      <span>Zahtevi ({{ zahtevi.length }})</span>
+      <button type="button" class="btn btn-secondary" (click)="addClaim()">+ Dodaj zahtev</button>
+    </h2>
+
+    <div formArrayName="zahtevi">
+      @for (group of zahtevi.controls; track $index; let i = $index) {
+        <div class="damage-row" [formGroupName]="i">
+          <div class="field">
+            <label>Vlasnik ID</label>
+            <input type="text" formControlName="vlasnikId" />
+          </div>
+          <div class="field">
+            <label>Vozilo broj</label>
+            <input type="text" formControlName="voziloBroj" />
+          </div>
+          <div class="field">
+            <label>Iznos zahteva (€)</label>
+            <input type="number" formControlName="iznosZahteva" />
+          </div>
+          <div class="field" style="grid-column: span 2;">
+            <label>Vreme zahteva</label>
+            <input type="datetime-local" formControlName="vremeZahteva" />
+          </div>
+          <div></div>
+          <div>
+            <button
+              type="button"
+              class="btn btn-danger"
+              (click)="removeClaim(i)"
+              [disabled]="zahtevi.length <= 1"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="btn" [disabled]="loading()">
+        @if (loading()) { Slanje… } @else { Pokreni proveru }
+      </button>
+    </div>
+  </div>
+</form>
+
+@if (alerts() !== null) {
+  <div class="card">
+    <h3>Rezultat ({{ lastSubmittedCount() }} zahteva poslato)</h3>
+    @if (alerts()!.length === 0) {
+      <div class="notice-banner">Nije pronađeno nijedno upozorenje za prevaru.</div>
+    } @else {
+      <table>
+        <thead>
+          <tr>
+            <th>Vlasnik</th>
+            <th>Nivo</th>
+            <th>Opis</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of alerts(); track $index) {
+            <tr>
+              <td>{{ a.vlasnikId }}</td>
+              <td><span [class]="badgeClass(a.nivo)">{{ a.nivo }}</span></td>
+              <td>{{ a.opis }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+}

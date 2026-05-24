@@ -1,0 +1,90 @@
+package rules;
+
+import com.sbnz.vehicleassessment.model.Vozilo;
+import com.sbnz.vehicleassessment.model.Faktor;
+import com.sbnz.vehicleassessment.model.Trosak;
+import com.sbnz.vehicleassessment.model.VrednostVozila;
+import com.sbnz.vehicleassessment.model.Ostaci;
+import com.sbnz.vehicleassessment.model.Odluka;
+import com.sbnz.vehicleassessment.model.enums.TipOdluke;
+import com.sbnz.vehicleassessment.model.enums.TipFaktora;
+import java.util.List;
+
+// =========================================================
+// Forward chaining - Nivo 3: agregacija i finalna odluka
+// =========================================================
+
+rule "Agregacija vrednosti vozila"
+    salience 30
+when
+    $v : Vozilo()
+    not VrednostVozila()
+    exists Faktor(tip == TipFaktora.STAROST)
+    exists Faktor(tip == TipFaktora.KM)
+    exists Faktor(tip == TipFaktora.STANJE)
+    exists Faktor(tip == TipFaktora.EKSPLOATACIJA)
+    $faktori : List() from collect( Faktor() )
+then
+    double proizvod = 1.0;
+    for (Object o : $faktori) {
+        Faktor f = (Faktor) o;
+        proizvod *= f.getKoeficijent();
+    }
+    double vrednost = $v.getNabavnaCena() * proizvod;
+    insert(new VrednostVozila(vrednost));
+end
+
+rule "Procena ostataka - vozilo je vozno (airbag nije aktiviran)"
+    salience 20
+when
+    $vv : VrednostVozila($vred : vrednost)
+    Vozilo(airbagAktiviran == false)
+    not Ostaci()
+then
+    insert(new Ostaci(0.45 * $vred));
+end
+
+rule "Procena ostataka - vozilo nije vozno (airbag aktiviran)"
+    salience 20
+when
+    $vv : VrednostVozila($vred : vrednost)
+    Vozilo(airbagAktiviran == true)
+    not Ostaci()
+then
+    insert(new Ostaci(0.25 * $vred));
+end
+
+rule "Totalna steta"
+    salience 10
+when
+    $vv : VrednostVozila($v : vrednost)
+    $o  : Ostaci($ost : vrednost)
+    Number($T : doubleValue, doubleValue >= ($v - $ost)) from accumulate(
+        $t : Trosak($iz : iznos),
+        sum($iz)
+    )
+    not Odluka()
+then
+    double naknada = $v - $ost;
+    String obraz = String.format(
+        "Troskovi popravke %.2f >= neto vrednost vozila %.2f (vrednost %.2f - ostaci %.2f). Proglasena TOTALNA STETA.",
+        $T, naknada, $v, $ost);
+    insert(new Odluka(TipOdluke.TOTALNA_STETA, naknada, obraz));
+end
+
+rule "Ekonomska popravka"
+    salience 10
+when
+    $vv : VrednostVozila($v : vrednost)
+    $o  : Ostaci($ost : vrednost)
+    Number($T : doubleValue, doubleValue < ($v - $ost)) from accumulate(
+        $t : Trosak($iz : iznos),
+        sum($iz)
+    )
+    not Odluka()
+then
+    String obraz = String.format(
+        "Troskovi popravke %.2f < neto vrednost vozila %.2f. Preporuka: EKONOMSKA POPRAVKA.",
+        $T, ($v - $ost));
+    insert(new Odluka(TipOdluke.EKONOMSKA_POPRAVKA, $T, obraz));
+end

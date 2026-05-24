@@ -1,0 +1,45 @@
+template header
+marka
+startKoef
+godisnjiPad
+minVrednost
+kmKorekcija
+
+package rules;
+
+import com.sbnz.vehicleassessment.model.Vozilo;
+import com.sbnz.vehicleassessment.model.Faktor;
+import com.sbnz.vehicleassessment.model.enums.TipFaktora;
+
+template "BrandDepreciation"
+
+rule "Amortizacija - @{marka} - do 10 godina"
+    salience 110
+when
+    $v : Vozilo(marka == "@{marka}", godinaStarosti >= 0, godinaStarosti <= 10)
+    not Faktor(tip == TipFaktora.STAROST)
+then
+    double koef = Math.max(@{startKoef} - $v.getGodinaStarosti() * @{godisnjiPad}, @{minVrednost});
+    insert(new Faktor(TipFaktora.STAROST, koef));
+end
+
+rule "Amortizacija - @{marka} - preko 10 godina"
+    salience 110
+when
+    $v : Vozilo(marka == "@{marka}", godinaStarosti > 10)
+    not Faktor(tip == TipFaktora.STAROST)
+then
+    insert(new Faktor(TipFaktora.STAROST, @{minVrednost}));
+end
+
+rule "Korekcija km - @{marka}"
+    salience 105
+when
+    $v : Vozilo(marka == "@{marka}")
+    eval($v.getKmGodisnje() > $v.getProsecnoKmKategorije())
+    not Faktor(tip == TipFaktora.KM)
+then
+    insert(new Faktor(TipFaktora.KM, @{kmKorekcija}));
+end
+
+end template

@@ -1,0 +1,21 @@
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">SBNZ</span>
+      <span class="brand-title">Procena štete vozila</span>
+    </div>
+    <nav class="topnav">
+      <a routerLink="/assessment" routerLinkActive="active">Procena</a>
+      <a routerLink="/history" routerLinkActive="active">Istorija</a>
+      <a routerLink="/fraud" routerLinkActive="active">Provera prevara</a>
+    </nav>
+  </header>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+
+  <footer class="footer">
+    <span>SBNZ — Vehicle Damage Assessment · Drools + Angular</span>
+  </footer>
+</div>

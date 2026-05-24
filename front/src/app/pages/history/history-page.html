@@ -1,0 +1,60 @@
+<div class="page-header">
+  <div>
+    <h1>Istorija procena</h1>
+    <p>Sve do sada izvršene procene sačuvane u bazi (H2).</p>
+  </div>
+  <button type="button" class="btn btn-secondary" (click)="refresh()" [disabled]="loading()">
+    Osveži
+  </button>
+</div>
+
+@if (errorMsg()) {
+  <div class="error-banner">{{ errorMsg() }}</div>
+}
+
+<div class="card">
+  @if (loading()) {
+    <div class="empty">Učitavanje…</div>
+  } @else if (records().length === 0) {
+    <div class="empty">Nema sačuvanih procena. Otvorite "Procena" i pokrenite jednu.</div>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Vozilo</th>
+          <th>Datum</th>
+          <th style="text-align: right;">Vrednost</th>
+          <th style="text-align: right;">Troškovi</th>
+          <th style="text-align: right;">Naknada</th>
+          <th>Odluka</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of records(); track r.id) {
+          <tr>
+            <td>{{ r.id }}</td>
+            <td>{{ r.marka }} {{ r.model }}</td>
+            <td>{{ r.kreirano | date: 'short' }}</td>
+            <td style="text-align: right;">{{ r.vrednostVozila | number: '1.0-2' }} €</td>
+            <td style="text-align: right;">{{ r.ukupniTroskovi | number: '1.0-2' }} €</td>
+            <td style="text-align: right;">{{ r.naknada | number: '1.0-2' }} €</td>
+            <td>
+              @if (r.odluka) {
+                <span [class]="badgeClass(r.odluka)">
+                  {{ r.odluka === 'TOTALNA_STETA' ? 'Totalna' : 'Popravka' }}
+                </span>
+              } @else {
+                <span class="muted">—</span>
+              }
+            </td>
+            <td>
+              <a class="btn btn-ghost" [routerLink]="['/history', r.id]">Detalji</a>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

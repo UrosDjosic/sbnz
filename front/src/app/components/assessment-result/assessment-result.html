@@ -1,0 +1,176 @@
+<div class="card">
+  <h2 class="card-title">Rezultat procene</h2>
+
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Vrednost vozila</div>
+      <div class="kpi-value">{{ response.vrednostVozila | number: '1.0-2' }} €</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Vrednost ostataka</div>
+      <div class="kpi-value">{{ response.vrednostOstataka | number: '1.0-2' }} €</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Ukupni troškovi</div>
+      <div class="kpi-value warning">{{ response.ukupniTroskovi | number: '1.0-2' }} €</div>
+    </div>
+    @if (response.odluka) {
+      <div class="kpi">
+        <div class="kpi-label">Naknada</div>
+        <div
+          class="kpi-value"
+          [class.danger]="response.odluka.tip === 'TOTALNA_STETA'"
+          [class.success]="response.odluka.tip === 'EKONOMSKA_POPRAVKA'"
+        >
+          {{ response.odluka.naknada | number: '1.0-2' }} €
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (response.odluka) {
+    <div class="card" style="margin-bottom: 0;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+        <h3 style="margin: 0;">Odluka</h3>
+        <span [class]="decisionBadge(response.odluka.tip)">
+          {{ response.odluka.tip === 'TOTALNA_STETA' ? 'Totalna šteta' : 'Ekonomska popravka' }}
+        </span>
+      </div>
+      <p class="muted" style="margin-top: 0.6rem; white-space: pre-line;">
+        {{ response.odluka.obrazlozenje }}
+      </p>
+    </div>
+  } @else {
+    <div class="empty">Nije doneta finalna odluka.</div>
+  }
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>Faktori vrednosti</h3>
+    @if (response.faktori.length) {
+      <table>
+        <thead>
+          <tr>
+            <th>Tip</th>
+            <th>Koeficijent</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (f of response.faktori; track $index) {
+            <tr>
+              <td><span class="badge badge-info">{{ f.tip }}</span></td>
+              <td>{{ f.koeficijent | number: '1.0-3' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <div class="empty">Nema faktora.</div>
+    }
+  </div>
+
+  <div class="card">
+    <h3>Troškovi po stavkama</h3>
+    @if (response.troskovi.length) {
+      <table>
+        <thead>
+          <tr>
+            <th>Deo</th>
+            <th>Intervencija</th>
+            <th style="text-align: right;">Iznos</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (t of response.troskovi; track $index) {
+            <tr>
+              <td>{{ t.deo }}</td>
+              <td><span class="badge">{{ t.tip }}</span></td>
+              <td style="text-align: right;">{{ t.iznos | number: '1.0-2' }} €</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <div class="empty">Nema obračunatih troškova.</div>
+    }
+  </div>
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>Indikatori</h3>
+    @if (response.indikatori.length) {
+      <table>
+        <thead>
+          <tr>
+            <th>Tip</th>
+            <th>Deo</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (i of response.indikatori; track $index) {
+            <tr>
+              <td><span class="badge badge-warning">{{ i.tip }}</span></td>
+              <td>{{ i.deo }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <div class="empty">Nema indikatora.</div>
+    }
+  </div>
+
+  <div class="card">
+    <h3>Eskalacije</h3>
+    @if (response.eskalacije.length) {
+      <table>
+        <thead>
+          <tr>
+            <th>Nivo</th>
+            <th>Opis</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of response.eskalacije; track $index) {
+            <tr>
+              <td><span [class]="escalationBadge(e.tip)">{{ e.tip }}</span></td>
+              <td>{{ e.opis }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else {
+      <div class="empty">Nema eskalacija.</div>
+    }
+  </div>
+</div>
+
+<div class="card">
+  <h3>Promene tipa intervencije (Drools)</h3>
+  @if (response.promene.length) {
+    <table>
+      <thead>
+        <tr>
+          <th>Deo</th>
+          <th>Iz</th>
+          <th>U</th>
+          <th>Razlog</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of response.promene; track $index) {
+          <tr>
+            <td>{{ p.deo }}</td>
+            <td><span class="badge">{{ p.od }}</span></td>
+            <td><span class="badge badge-info">{{ p.ka }}</span></td>
+            <td>{{ p.razlog }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <div class="empty">Sistem nije menjao tip intervencije.</div>
+  }
+</div>

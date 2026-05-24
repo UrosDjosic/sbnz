@@ -1,0 +1,51 @@
+package rules;
+
+import com.sbnz.vehicleassessment.model.event.ZahtevEvent;
+import com.sbnz.vehicleassessment.model.event.FraudAlert;
+import com.sbnz.vehicleassessment.model.enums.TipEskalacije;
+import java.util.List;
+
+// =========================================================
+// CEP - detekcija sumnjivih obrazaca u zahtevima
+// =========================================================
+
+rule "OBRAZAC 1 - Dva zahteva istog vlasnika za razlicita vozila u 30 dana"
+when
+    $z1 : ZahtevEvent($vlasnik : vlasnikId, $vozilo1 : voziloBroj)
+    $z2 : ZahtevEvent(vlasnikId == $vlasnik, voziloBroj != $vozilo1,
+                      this after[1s, 30d] $z1)
+    not FraudAlert(vlasnikId == $vlasnik,
+                   opis == "Dva zahteva za razlicita vozila u 30 dana")
+then
+    insert(new FraudAlert($vlasnik,
+        "Dva zahteva za razlicita vozila u 30 dana",
+        TipEskalacije.PROVERA));
+end
+
+rule "OBRAZAC 2 - Vise od 3 zahteva za isto vozilo u 12 meseci (sliding window)"
+when
+    $z : ZahtevEvent($vozilo : voziloBroj)
+    $lista : List(size >= 3) from collect(
+        ZahtevEvent(voziloBroj == $vozilo) over window:time(365d)
+    )
+    not FraudAlert(opis == ("Ucestalost zahteva za vozilo " + $vozilo))
+then
+    insert(new FraudAlert(null,
+        "Ucestalost zahteva za vozilo " + $vozilo,
+        TipEskalacije.ESKALACIJA));
+end
+
+rule "OBRAZAC 3 - Visok iznos zahteva u kratkom periodu od aktiviranja polise"
+    // Treci obrazac koristi akumulaciju i sliding window
+when
+    $z : ZahtevEvent($vlasnik : vlasnikId, $iznos : iznosZahteva)
+    Number(doubleValue > 100000) from accumulate(
+        $zh : ZahtevEvent(vlasnikId == $vlasnik) over window:time(7d),
+        sum($zh.getIznosZahteva())
+    )
+    not FraudAlert(vlasnikId == $vlasnik, opis == "Akumulirani iznos zahteva preko 100000 RSD u 7 dana")
+then
+    insert(new FraudAlert($vlasnik,
+        "Akumulirani iznos zahteva preko 100000 RSD u 7 dana",
+        TipEskalacije.ESKALACIJA));
+end

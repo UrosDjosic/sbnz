@@ -1,0 +1,121 @@
+package rules;
+
+import com.sbnz.vehicleassessment.model.Vozilo;
+import com.sbnz.vehicleassessment.model.Faktor;
+import com.sbnz.vehicleassessment.model.enums.TipFaktora;
+import com.sbnz.vehicleassessment.model.enums.TipKoriscenja;
+import com.sbnz.vehicleassessment.model.enums.KvalitetPopravki;
+
+// =========================================================
+// Forward chaining - Nivo 1: faktori vrednosti vozila
+// =========================================================
+
+rule "Amortizacija po starosti - do 10 godina (fallback)"
+    salience 100
+when
+    $v : Vozilo(godinaStarosti >= 0, godinaStarosti <= 10)
+    not Faktor(tip == TipFaktora.STAROST)
+then
+    double koef = Math.max(0.20, 1.0 - $v.getGodinaStarosti() * 0.076);
+    insert(new Faktor(TipFaktora.STAROST, koef));
+end
+
+rule "Amortizacija po starosti - preko 10 godina (fallback)"
+    salience 100
+when
+    $v : Vozilo(godinaStarosti > 10)
+    not Faktor(tip == TipFaktora.STAROST)
+then
+    insert(new Faktor(TipFaktora.STAROST, 0.20));
+end
+
+rule "Korekcija prema predjenim km - iznad proseka"
+when
+    $v : Vozilo()
+    eval($v.getKmGodisnje() > $v.getProsecnoKmKategorije())
+    not Faktor(tip == TipFaktora.KM)
+then
+    insert(new Faktor(TipFaktora.KM, 0.97));
+end
+
+rule "Korekcija prema predjenim km - ispod proseka"
+when
+    $v : Vozilo()
+    eval($v.getKmGodisnje() < 0.85 * $v.getProsecnoKmKategorije())
+    not Faktor(tip == TipFaktora.KM)
+then
+    insert(new Faktor(TipFaktora.KM, 1.03));
+end
+
+rule "Korekcija prema predjenim km - u okviru proseka"
+when
+    $v : Vozilo()
+    eval($v.getKmGodisnje() >= 0.85 * $v.getProsecnoKmKategorije()
+         && $v.getKmGodisnje() <= $v.getProsecnoKmKategorije())
+    not Faktor(tip == TipFaktora.KM)
+then
+    insert(new Faktor(TipFaktora.KM, 1.00));
+end
+
+rule "Opste stanje - nadprosecno"
+when
+    $v : Vozilo(stanje >= 8)
+then
+    insert(new Faktor(TipFaktora.STANJE, 1.05));
+end
+
+rule "Opste stanje - prosecno"
+when
+    $v : Vozilo(stanje >= 5, stanje < 8)
+then
+    insert(new Faktor(TipFaktora.STANJE, 1.00));
+end
+
+rule "Opste stanje - lose"
+when
+    $v : Vozilo(stanje < 5)
+then
+    insert(new Faktor(TipFaktora.STANJE, 0.90));
+end
+
+rule "Eksploatacija - intenzivna upotreba"
+when
+    Vozilo(tipKoriscenja == TipKoriscenja.TAKSI || tipKoriscenja == TipKoriscenja.RENT_A_CAR)
+then
+    insert(new Faktor(TipFaktora.EKSPLOATACIJA, 0.92));
+end
+
+rule "Eksploatacija - dostava"
+when
+    Vozilo(tipKoriscenja == TipKoriscenja.DOSTAVA)
+then
+    insert(new Faktor(TipFaktora.EKSPLOATACIJA, 0.95));
+end
+
+rule "Eksploatacija - privatna"
+when
+    Vozilo(tipKoriscenja == TipKoriscenja.PRIVATNO)
+then
+    insert(new Faktor(TipFaktora.EKSPLOATACIJA, 1.00));
+end
+
+rule "Ranije stete - los kvalitet popravki"
+when
+    Vozilo(ranijeStete == true, kvalitetPrethodnih == KvalitetPopravki.LOS)
+then
+    insert(new Faktor(TipFaktora.RANIJE_STETE, 0.88));
+end
+
+rule "Ranije stete - prosecan kvalitet popravki"
+when
+    Vozilo(ranijeStete == true, kvalitetPrethodnih == KvalitetPopravki.PROSECAN)
+then
+    insert(new Faktor(TipFaktora.RANIJE_STETE, 0.95));
+end
+
+rule "Ranije stete - dobar kvalitet popravki"
+when
+    Vozilo(ranijeStete == true, kvalitetPrethodnih == KvalitetPopravki.DOBAR)
+then
+    insert(new Faktor(TipFaktora.RANIJE_STETE, 0.98));
+end

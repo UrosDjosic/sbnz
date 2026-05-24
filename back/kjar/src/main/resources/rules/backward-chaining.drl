@@ -1,0 +1,80 @@
+package rules;
+
+import com.sbnz.vehicleassessment.model.bc.DeoHijerarhija;
+import com.sbnz.vehicleassessment.model.bc.KriticniSklop;
+import com.sbnz.vehicleassessment.model.bc.RezervniDeo;
+import com.sbnz.vehicleassessment.model.bc.KompatibilanSa;
+import com.sbnz.vehicleassessment.model.OstecenoVozilo;
+import com.sbnz.vehicleassessment.model.Vozilo;
+import com.sbnz.vehicleassessment.model.Faktor;
+import com.sbnz.vehicleassessment.model.Indikator;
+import com.sbnz.vehicleassessment.model.Eskalacija;
+import com.sbnz.vehicleassessment.model.PromenaIntervencije;
+import com.sbnz.vehicleassessment.model.enums.TipFaktora;
+import com.sbnz.vehicleassessment.model.enums.TipIndikatora;
+import com.sbnz.vehicleassessment.model.enums.TipEskalacije;
+import com.sbnz.vehicleassessment.model.enums.TipIntervencije;
+
+// =========================================================
+// Backward chaining - rekurzivne query definicije
+// =========================================================
+
+query pripadaSklopu(String deoP, String sklopP)
+    ( DeoHijerarhija(deo == deoP, roditelj == sklopP) )
+    or
+    (
+        DeoHijerarhija(deo == deoP, $medjusklop : roditelj)
+        and pripadaSklopu($medjusklop, sklopP;)
+    )
+end
+
+query jeKriticanDeo(String deoP)
+    KriticniSklop($s : sklop)
+    pripadaSklopu(deoP, $s;)
+end
+
+query mozeBitiZamenjen(String deoP)
+    ( RezervniDeo(deo == deoP, dostupan == true) )
+    or
+    (
+        KompatibilanSa(deo == deoP, $alt : alternativa)
+        and mozeBitiZamenjen($alt;)
+    )
+end
+
+// =========================================================
+// BC pravila - pozivi upita iz LHS uslova
+// =========================================================
+
+rule "Steta na kriticnoj komponenti - forsiraj strucnu proveru"
+when
+    $o : OstecenoVozilo($naziv : naziv)
+    jeKriticanDeo($naziv;)
+    not Indikator(tip == TipIndikatora.KRITICNA_KOMPONENTA, deo == $naziv)
+then
+    insert(new Indikator(TipIndikatora.KRITICNA_KOMPONENTA, $naziv));
+    insert(new Eskalacija(TipEskalacije.STRUCNA_PROVERA, "Ostecen kritican deo vozila: " + $naziv));
+end
+
+rule "Aktiviran airbag - bezbednosni sistem kompromitovan"
+when
+    Vozilo(airbagAktiviran == true)
+    jeKriticanDeo("airbag";)
+    not Faktor(tip == TipFaktora.BEZBEDNOST)
+then
+    insert(new Faktor(TipFaktora.BEZBEDNOST, 0.85));
+    insert(new Indikator(TipIndikatora.AIRBAG_AKTIVIRAN, "airbag"));
+end
+
+rule "Deo se ne moze nabaviti - preporuci popravku umesto zamene"
+when
+    $o : OstecenoVozilo($naziv : naziv, tipIntervencije == TipIntervencije.ZAMENA)
+    not ( mozeBitiZamenjen($naziv;) )
+    not PromenaIntervencije(deo == $naziv)
+then
+    insert(new PromenaIntervencije(
+        $naziv,
+        TipIntervencije.ZAMENA,
+        TipIntervencije.POPRAVKA,
+        "Nema dostupnog rezervnog dela u lancu kompatibilnosti"));
+end

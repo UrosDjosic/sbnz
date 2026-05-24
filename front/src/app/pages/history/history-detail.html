@@ -1,0 +1,65 @@
+<div class="page-header">
+  <div>
+    <h1>Detalji procene</h1>
+    <p>Snimak sačuvan u bazi nakon Drools procene.</p>
+  </div>
+  <a class="btn btn-secondary" routerLink="/history">← Nazad</a>
+</div>
+
+@if (loading()) {
+  <div class="card"><div class="empty">Učitavanje…</div></div>
+} @else if (errorMsg()) {
+  <div class="error-banner">{{ errorMsg() }}</div>
+} @else if (record(); as r) {
+  <div class="kpi-row">
+    <div class="kpi">
+      <div class="kpi-label">Vozilo</div>
+      <div class="kpi-value">{{ r.marka }} {{ r.model }}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Nabavna cena</div>
+      <div class="kpi-value">{{ r.nabavnaCena | number: '1.0-2' }} €</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Vrednost vozila</div>
+      <div class="kpi-value">{{ r.vrednostVozila | number: '1.0-2' }} €</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Vrednost ostataka</div>
+      <div class="kpi-value">{{ r.vrednostOstataka | number: '1.0-2' }} €</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Ukupni troškovi</div>
+      <div class="kpi-value warning">{{ r.ukupniTroskovi | number: '1.0-2' }} €</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Naknada</div>
+      <div
+        class="kpi-value"
+        [class.danger]="r.odluka === 'TOTALNA_STETA'"
+        [class.success]="r.odluka === 'EKONOMSKA_POPRAVKA'"
+      >
+        {{ r.naknada | number: '1.0-2' }} €
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; gap: 1rem; align-items: center;">
+      <h3 style="margin: 0;">Odluka</h3>
+      @if (r.odluka) {
+        <span [class]="decisionBadge(r.odluka)">
+          {{ r.odluka === 'TOTALNA_STETA' ? 'Totalna šteta' : 'Ekonomska popravka' }}
+        </span>
+      } @else {
+        <span class="muted">Nije evidentirana</span>
+      }
+    </div>
+    <p class="muted" style="margin-top: 0.6rem; white-space: pre-line;">
+      {{ r.obrazlozenje || 'Nema obrazloženja.' }}
+    </p>
+    <p class="muted" style="margin-top: 0.6rem; font-size: 0.85rem;">
+      Kreirano: {{ r.kreirano | date: 'medium' }}
+    </p>
+  </div>
+}

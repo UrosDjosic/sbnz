@@ -1,0 +1,39 @@
+package rules;
+
+import com.sbnz.vehicleassessment.model.OstecenoVozilo;
+import com.sbnz.vehicleassessment.model.Trosak;
+import com.sbnz.vehicleassessment.model.enums.TipIntervencije;
+
+// =========================================================
+// Forward chaining - Nivo 2: troskovi po stavkama stete
+// =========================================================
+
+rule "Trosak zamene dela"
+    salience 50
+when
+    $d : OstecenoVozilo(tipIntervencije == TipIntervencije.ZAMENA, $naziv : naziv)
+    not Trosak(deo == $naziv)
+then
+    double ukupno = $d.getCenaDela() + $d.getNormaSati() * $d.getCenaRadaSat();
+    insert(new Trosak($naziv, ukupno, TipIntervencije.ZAMENA));
+end
+
+rule "Trosak popravke (bez zamene)"
+    salience 50
+when
+    $d : OstecenoVozilo(tipIntervencije == TipIntervencije.POPRAVKA, $naziv : naziv)
+    not Trosak(deo == $naziv)
+then
+    double ukupno = $d.getNormaSati() * $d.getCenaRadaSat();
+    insert(new Trosak($naziv, ukupno, TipIntervencije.POPRAVKA));
+end
+
+rule "Trosak farbanja - uracunat materijal +15%"
+    salience 50
+when
+    $d : OstecenoVozilo(tipIntervencije == TipIntervencije.FARBANJE, $naziv : naziv)
+    not Trosak(deo == $naziv)
+then
+    double ukupno = ($d.getNormaSati() * $d.getCenaRadaSat()) * 1.15;
+    insert(new Trosak($naziv, ukupno, TipIntervencije.FARBANJE));
+end

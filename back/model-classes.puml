@@ -1,0 +1,220 @@
+@startuml
+title Model Maven Project - Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam classBorderThickness 1
+hide empty members
+
+class AssessmentRequest {
+    - vozilo : Vozilo
+    - ostecenja : List<OstecenoVozilo>
+}
+
+class AssessmentResponse {
+    - vrednostVozila : double
+    - vrednostOstataka : double
+    - ukupniTroskovi : double
+    - odluka : Odluka
+    - faktori : List<Faktor>
+    - troskovi : List<Trosak>
+    - indikatori : List<Indikator>
+    - eskalacije : List<Eskalacija>
+    - promene : List<PromenaIntervencije>
+}
+
+class FraudCheckRequest {
+    - zahtevi : List<ZahtevEvent>
+}
+
+class FraudCheckResponse {
+    - alerti : List<FraudAlert>
+}
+
+class BrandCoefficient {
+    - marka : String
+    - startKoef : double
+    - godisnjiPad : double
+    - minVrednost : double
+    - kmKorekcija : double
+}
+
+class Eskalacija {
+    - tip : TipEskalacije
+    - opis : String
+}
+
+class Faktor {
+    - tip : TipFaktora
+    - koeficijent : double
+}
+
+class Indikator {
+    - tip : TipIndikatora
+    - deo : String
+}
+
+class Objasnjenje {
+    - korak : String
+    - opis : String
+}
+
+class Odluka {
+    - tip : TipOdluke
+    - naknada : double
+    - obrazlozenje : String
+}
+
+class Ostaci {
+    - vrednost : double
+}
+
+class OstecenoVozilo {
+    - naziv : String
+    - tipIntervencije : TipIntervencije
+    - cenaDela : double
+    - normaSati : int
+    - cenaRadaSat : double
+    - procenatOstecenja : double
+}
+
+class PromenaIntervencije {
+    - deo : String
+    - od : TipIntervencije
+    - ka : TipIntervencije
+    - razlog : String
+}
+
+class RepairPolicy {
+    - deo : String
+    - maxPopravkaProcenat : double
+    - dozvoliPopravku : boolean
+    - kritican : boolean
+}
+
+class Trosak {
+    - deo : String
+    - iznos : double
+    - tip : TipIntervencije
+}
+
+class Vozilo {
+    - marka : String
+    - model : String
+    - godinaPrveRegistracije : int
+    - predjenoKm : int
+    - prosecnoKmKategorije : int
+    - nabavnaCena : double
+    - stanje : int
+    - tipKoriscenja : TipKoriscenja
+    - ranijeStete : boolean
+    - kvalitetPrethodnih : KvalitetPopravki
+    - airbagAktiviran : boolean
+    + getGodinaStarosti() : int
+    + getKmGodisnje() : int
+}
+
+class VrednostVozila {
+    - vrednost : double
+}
+
+class DeoHijerarhija {
+    - deo : String
+    - roditelj : String
+}
+
+class KompatibilanSa {
+    - deo : String
+    - alternativa : String
+}
+
+class KriticniSklop {
+    - sklop : String
+}
+
+class RezervniDeo {
+    - deo : String
+    - dostupan : boolean
+}
+
+class FraudAlert {
+    - vlasnikId : String
+    - opis : String
+    - nivo : TipEskalacije
+}
+
+class ZahtevEvent <<event>> {
+    - vlasnikId : String
+    - voziloBroj : String
+    - iznosZahteva : double
+    - vremeZahteva : Date
+}
+
+enum KvalitetPopravki {
+    NEMA
+    LOS
+    PROSECAN
+    DOBAR
+}
+
+enum TipEskalacije {
+    STRUCNA_PROVERA
+    PROVERA
+    ESKALACIJA
+}
+
+enum TipFaktora {
+    STAROST
+    KM
+    STANJE
+    EKSPLOATACIJA
+    BEZBEDNOST
+    RANIJE_STETE
+}
+
+enum TipIndikatora {
+    KRITICNA_KOMPONENTA
+    AIRBAG_AKTIVIRAN
+    RANIJE_STETE
+}
+
+enum TipIntervencije {
+    ZAMENA
+    POPRAVKA
+    FARBANJE
+}
+
+enum TipKoriscenja {
+    PRIVATNO
+    TAKSI
+    RENT_A_CAR
+    DOSTAVA
+}
+
+enum TipOdluke {
+    TOTALNA_STETA
+    EKONOMSKA_POPRAVKA
+}
+
+AssessmentRequest *-- Vozilo
+AssessmentRequest o-- "0..*" OstecenoVozilo
+AssessmentResponse *-- Odluka
+AssessmentResponse o-- "0..*" Faktor
+AssessmentResponse o-- "0..*" Trosak
+AssessmentResponse o-- "0..*" Indikator
+AssessmentResponse o-- "0..*" Eskalacija
+AssessmentResponse o-- "0..*" PromenaIntervencije
+FraudCheckRequest o-- "0..*" ZahtevEvent
+FraudCheckResponse o-- "0..*" FraudAlert
+
+Vozilo --> TipKoriscenja
+Vozilo --> KvalitetPopravki
+OstecenoVozilo --> TipIntervencije
+PromenaIntervencije --> TipIntervencije
+Trosak --> TipIntervencije
+Odluka --> TipOdluke
+Faktor --> TipFaktora
+Indikator --> TipIndikatora
+Eskalacija --> TipEskalacije
+FraudAlert --> TipEskalacije
+
+@enduml

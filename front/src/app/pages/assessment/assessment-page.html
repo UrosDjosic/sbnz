@@ -1,0 +1,157 @@
+<div class="page-header">
+  <div>
+    <h1>Procena štete vozila</h1>
+    <p>Unesite podatke o vozilu i oštećenjima — sistem će izračunati vrednost, troškove popravke i donijeti odluku.</p>
+  </div>
+  <div class="actions" style="margin: 0;">
+    <button type="button" class="btn btn-secondary" (click)="fillExample()">Primer podataka</button>
+    <button type="button" class="btn btn-ghost" (click)="resetForm()">Resetuj</button>
+  </div>
+</div>
+
+@if (errorMsg()) {
+  <div class="error-banner">{{ errorMsg() }}</div>
+}
+
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="card" formGroupName="vozilo">
+    <h2 class="card-title">
+      <span>1. Podaci o vozilu</span>
+    </h2>
+    <div class="grid">
+      <div class="field">
+        <label for="marka">Marka</label>
+        <select id="marka" formControlName="marka">
+          @for (brand of brandOptions(); track brand) {
+            <option [value]="brand">{{ brand }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="model">Model</label>
+        <input id="model" type="text" formControlName="model" />
+      </div>
+      <div class="field">
+        <label for="godinaPrveRegistracije">Godina prve registracije</label>
+        <input
+          id="godinaPrveRegistracije"
+          type="number"
+          formControlName="godinaPrveRegistracije"
+        />
+      </div>
+      <div class="field">
+        <label for="predjenoKm">Pređeno km</label>
+        <input id="predjenoKm" type="number" formControlName="predjenoKm" />
+      </div>
+      <div class="field">
+        <label for="prosecnoKmKategorije">Prosečno km kategorije (god.)</label>
+        <input
+          id="prosecnoKmKategorije"
+          type="number"
+          formControlName="prosecnoKmKategorije"
+        />
+      </div>
+      <div class="field">
+        <label for="nabavnaCena">Nabavna cena (€)</label>
+        <input id="nabavnaCena" type="number" formControlName="nabavnaCena" />
+      </div>
+      <div class="field">
+        <label for="stanje">Opšte stanje (1–5)</label>
+        <input id="stanje" type="number" min="1" max="5" formControlName="stanje" />
+      </div>
+      <div class="field">
+        <label for="tipKoriscenja">Tip korišćenja</label>
+        <select id="tipKoriscenja" formControlName="tipKoriscenja">
+          @for (t of tipKoriscenjaOptions; track t) {
+            <option [value]="t">{{ t }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="kvalitetPrethodnih">Kvalitet ranijih popravki</label>
+        <select id="kvalitetPrethodnih" formControlName="kvalitetPrethodnih">
+          @for (k of kvalitetOptions; track k) {
+            <option [value]="k">{{ k }}</option>
+          }
+        </select>
+      </div>
+      <div class="checkbox">
+        <input id="ranijeStete" type="checkbox" formControlName="ranijeStete" />
+        <label for="ranijeStete" style="font-weight: 500; color: var(--text);">Ranije štete</label>
+      </div>
+      <div class="checkbox">
+        <input id="airbagAktiviran" type="checkbox" formControlName="airbagAktiviran" />
+        <label for="airbagAktiviran" style="font-weight: 500; color: var(--text);">Airbag aktiviran</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 class="card-title">
+      <span>2. Oštećenja ({{ ostecenja.length }})</span>
+      <button type="button" class="btn btn-secondary" (click)="addDamage()">+ Dodaj oštećenje</button>
+    </h2>
+
+    <div class="damages-list" formArrayName="ostecenja">
+      @for (group of ostecenja.controls; track $index; let i = $index) {
+        <div class="damage-row" [formGroupName]="i">
+          <div class="field">
+            <label>Naziv dela</label>
+            <select formControlName="naziv">
+              @for (part of carPartOptions(); track part) {
+                <option [value]="part">{{ part }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label>Intervencija</label>
+            <select formControlName="tipIntervencije">
+              @for (t of tipIntervencijeOptions; track t) {
+                <option [value]="t">{{ t }}</option>
+              }
+            </select>
+          </div>
+          <div class="field">
+            <label>Cena dela (€)</label>
+            <input type="number" formControlName="cenaDela" />
+          </div>
+          <div class="field">
+            <label>Norma sati</label>
+            <input type="number" formControlName="normaSati" />
+          </div>
+          <div class="field">
+            <label>Cena rada/h (€)</label>
+            <input type="number" formControlName="cenaRadaSat" />
+          </div>
+          <div class="field">
+            <label>% oštećenja</label>
+            <input type="number" min="0" max="100" formControlName="procenatOstecenja" />
+          </div>
+          <div>
+            <button
+              type="button"
+              class="btn btn-danger"
+              (click)="removeDamage(i)"
+              [disabled]="ostecenja.length <= 1"
+              title="Ukloni"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn" [disabled]="loading()">
+      @if (loading()) { Procena u toku… } @else { Pokreni procenu }
+    </button>
+  </div>
+</form>
+
+@if (result(); as r) {
+  <div id="result-section" class="section">
+    <app-assessment-result [response]="r"></app-assessment-result>
+  </div>
+}
