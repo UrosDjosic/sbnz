@@ -3,7 +3,7 @@ package com.sbnz.vehicleassessment.service;
 import com.sbnz.vehicleassessment.dto.FraudCheckRequest;
 import com.sbnz.vehicleassessment.dto.FraudCheckResponse;
 import com.sbnz.vehicleassessment.model.event.FraudAlert;
-import com.sbnz.vehicleassessment.model.event.ZahtevEvent;
+import com.sbnz.vehicleassessment.model.event.ProcenaSteteEvent;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,26 +35,31 @@ public class FraudDetectionService {
     }
 
     public synchronized FraudCheckResponse processEvents(FraudCheckRequest req) {
-        if (req.getZahtevi() != null) {
-            for (ZahtevEvent z : req.getZahtevi()) {
-                cepSession.insert(z);
-                cepSession.fireAllRules();
+        KieSession session = cepKieContainer.newKieSession("fraudKSession");
+        try {
+            if (req.getProcene() != null) {
+                for (ProcenaSteteEvent p : req.getProcene()) {
+                    session.insert(p);
+                    session.fireAllRules();
+                }
             }
+            return new FraudCheckResponse(collectAlerts(session));
+        } finally {
+            session.dispose();
         }
-        List<FraudAlert> alerts = new ArrayList<>();
-        for (Object o : cepSession.getObjects()) {
-            if (o instanceof FraudAlert) alerts.add((FraudAlert) o);
-        }
-        return new FraudCheckResponse(alerts);
     }
 
-    public synchronized FraudCheckResponse addEvent(ZahtevEvent z) {
+    public synchronized FraudCheckResponse addEvent(ProcenaSteteEvent z) {
         cepSession.insert(z);
         cepSession.fireAllRules();
+        return new FraudCheckResponse(collectAlerts(cepSession));
+    }
+
+    private List<FraudAlert> collectAlerts(KieSession session) {
         List<FraudAlert> alerts = new ArrayList<>();
-        for (Object o : cepSession.getObjects()) {
+        for (Object o : session.getObjects()) {
             if (o instanceof FraudAlert) alerts.add((FraudAlert) o);
         }
-        return new FraudCheckResponse(alerts);
+        return alerts;
     }
 }

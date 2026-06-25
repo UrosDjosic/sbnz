@@ -22,6 +22,7 @@
       <thead>
         <tr>
           <th>ID</th>
+          <th>Broj šasije</th>
           <th>Vozilo</th>
           <th>Datum</th>
           <th style="text-align: right;">Vrednost</th>
@@ -35,6 +36,7 @@
         @for (r of records(); track r.id) {
           <tr>
             <td>{{ r.id }}</td>
+            <td>{{ r.brojSasije }}</td>
             <td>{{ r.marka }} {{ r.model }}</td>
             <td>{{ r.kreirano | date: 'short' }}</td>
             <td style="text-align: right;">{{ r.vrednostVozila | number: '1.0-2' }} €</td>

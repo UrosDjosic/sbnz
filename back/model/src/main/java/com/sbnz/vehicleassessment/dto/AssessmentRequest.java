@@ -12,6 +12,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AssessmentRequest {
+    private String brojSasije;
     private Vozilo vozilo;
     private List<OstecenoVozilo> ostecenja;
 }

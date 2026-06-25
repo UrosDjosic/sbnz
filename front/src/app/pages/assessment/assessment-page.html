@@ -14,9 +14,21 @@
 }
 
 <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="card">
+    <h2 class="card-title">
+      <span>1. Podaci o zahtevu</span>
+    </h2>
+    <div class="grid">
+      <div class="field">
+        <label for="brojSasije">Broj šasije</label>
+        <input id="brojSasije" type="text" formControlName="brojSasije" />
+      </div>
+    </div>
+  </div>
+
   <div class="card" formGroupName="vozilo">
     <h2 class="card-title">
-      <span>1. Podaci o vozilu</span>
+      <span>2. Podaci o vozilu</span>
     </h2>
     <div class="grid">
       <div class="field">
@@ -88,7 +100,7 @@
 
   <div class="card">
     <h2 class="card-title">
-      <span>2. Oštećenja ({{ ostecenja.length }})</span>
+      <span>3. Oštećenja ({{ ostecenja.length }})</span>
       <button type="button" class="btn btn-secondary" (click)="addDamage()">+ Dodaj oštećenje</button>
     </h2>
 

@@ -45,6 +45,32 @@
   }
 </div>
 
+<div class="card">
+  <h3>CEP upozorenja za prevaru</h3>
+  @if (response.fraudAlerti && response.fraudAlerti.length) {
+    <table>
+      <thead>
+        <tr>
+          <th>Broj šasije</th>
+          <th>Nivo</th>
+          <th>Opis</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of response.fraudAlerti; track $index) {
+          <tr>
+            <td>{{ a.brojSasije }}</td>
+            <td><span [class]="escalationBadge(a.nivo)">{{ a.nivo }}</span></td>
+            <td>{{ a.opis }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <div class="empty">CEP nije pronašao sumnjiv obrazac u dosadašnjem toku procena.</div>
+  }
+</div>
+
 <div class="grid-2">
   <div class="card">
     <h3>Faktori vrednosti</h3>

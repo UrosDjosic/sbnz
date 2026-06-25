@@ -1,10 +1,6 @@
 <div class="page-header">
   <div>
-    <h1>Provera prevara (CEP)</h1>
-    <p>Pošaljite niz zahteva za odštetu — Drools CEP pravila kreiraju upozorenja na nivou vlasnika i vozila.</p>
-  </div>
-  <div class="actions" style="margin: 0;">
-    <button type="button" class="btn btn-secondary" (click)="fillExample()">Primer podataka</button>
+    <h1>Provera prevare (CEP)</h1>
   </div>
 </div>
 
@@ -15,47 +11,98 @@
 <form [formGroup]="form" (ngSubmit)="submit()">
   <div class="card">
     <h2 class="card-title">
-      <span>Zahtevi ({{ zahtevi.length }})</span>
-      <button type="button" class="btn btn-secondary" (click)="addClaim()">+ Dodaj zahtev</button>
+      <span>Pretraga sačuvanih procena</span>
     </h2>
 
-    <div formArrayName="zahtevi">
-      @for (group of zahtevi.controls; track $index; let i = $index) {
-        <div class="damage-row" [formGroupName]="i">
-          <div class="field">
-            <label>Vlasnik ID</label>
-            <input type="text" formControlName="vlasnikId" />
-          </div>
-          <div class="field">
-            <label>Vozilo broj</label>
-            <input type="text" formControlName="voziloBroj" />
-          </div>
-          <div class="field">
-            <label>Iznos zahteva (€)</label>
-            <input type="number" formControlName="iznosZahteva" />
-          </div>
-          <div class="field" style="grid-column: span 2;">
-            <label>Vreme zahteva</label>
-            <input type="datetime-local" formControlName="vremeZahteva" />
-          </div>
-          <div></div>
-          <div>
-            <button
-              type="button"
-              class="btn btn-danger"
-              (click)="removeClaim(i)"
-              [disabled]="zahtevi.length <= 1"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      }
+    <div class="grid">
+      <div class="field">
+        <label for="brojSasije">Broj šasije</label>
+        <input id="brojSasije" type="text" formControlName="brojSasije" />
+      </div>
+      <div class="actions" style="align-items: end;">
+        <button type="button" class="btn btn-secondary" (click)="lookupByChassis()" [disabled]="lookupLoading()">
+          @if (lookupLoading()) { Pretraga… } @else { Nađi procene }
+        </button>
+      </div>
     </div>
+  </div>
+
+  @if (foundAssessments().length) {
+    <div class="card">
+      <h3>Pronađene procene</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Datum</th>
+            <th>Vozilo</th>
+            <th style="text-align: right;">Šteta</th>
+            <th>Odluka</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of foundAssessments(); track r.id) {
+            <tr>
+              <td>{{ r.id }}</td>
+              <td>{{ r.kreirano | date: 'short' }}</td>
+              <td>{{ r.marka }} {{ r.model }}</td>
+              <td style="text-align: right;">{{ r.procenatStete | number: '1.0-1' }}%</td>
+              <td>{{ r.odluka }}</td>
+              <td>
+                <button type="button" class="btn btn-ghost" (click)="addRecord(r)">Dodaj</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" (click)="addAllFound()">Dodaj sve pronađene</button>
+      </div>
+    </div>
+  }
+
+  <div class="card">
+    <h2 class="card-title">
+      <span>CEP ulaz iz istorije ({{ procene.length }})</span>
+    </h2>
+
+    @if (procene.length === 0) {
+      <div class="empty">Pronađite procene po broju šasije i dodajte ih u CEP proveru.</div>
+    } @else {
+      <table formArrayName="procene">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Broj šasije</th>
+            <th>Datum</th>
+            <th style="text-align: right;">Vrednost</th>
+            <th style="text-align: right;">Troškovi</th>
+            <th style="text-align: right;">Šteta</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (group of procene.controls; track $index; let i = $index) {
+            <tr [formGroupName]="i">
+              <td>{{ group.value.sourceId }}</td>
+              <td>{{ group.value.brojSasije }}</td>
+              <td>{{ group.value.vremeProcene | date: 'short' }}</td>
+              <td style="text-align: right;">{{ group.value.vrednostVozila | number: '1.0-2' }} €</td>
+              <td style="text-align: right;">{{ group.value.ukupniTroskovi | number: '1.0-2' }} €</td>
+              <td style="text-align: right;">{{ group.value.procenatStete | number: '1.0-1' }}%</td>
+              <td>
+                <button type="button" class="btn btn-danger" (click)="removeAssessmentEvent(i)">×</button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
 
     <div class="actions">
-      <button type="submit" class="btn" [disabled]="loading()">
-        @if (loading()) { Slanje… } @else { Pokreni proveru }
+      <button type="submit" class="btn" [disabled]="loading() || procene.length === 0">
+        @if (loading()) { Slanje… } @else { Pokreni CEP proveru }
       </button>
     </div>
   </div>
@@ -63,14 +110,14 @@
 
 @if (alerts() !== null) {
   <div class="card">
-    <h3>Rezultat ({{ lastSubmittedCount() }} zahteva poslato)</h3>
+    <h3>Rezultat ({{ lastSubmittedCount() }} procena poslato)</h3>
     @if (alerts()!.length === 0) {
-      <div class="notice-banner">Nije pronađeno nijedno upozorenje za prevaru.</div>
+      <div class="notice-banner">CEP nije pronašao nijedno upozorenje za prevaru.</div>
     } @else {
       <table>
         <thead>
           <tr>
-            <th>Vlasnik</th>
+            <th>Broj šasije</th>
             <th>Nivo</th>
             <th>Opis</th>
           </tr>
@@ -78,7 +125,7 @@
         <tbody>
           @for (a of alerts(); track $index) {
             <tr>
-              <td>{{ a.vlasnikId }}</td>
+              <td>{{ a.brojSasije }}</td>
               <td><span [class]="badgeClass(a.nivo)">{{ a.nivo }}</span></td>
               <td>{{ a.opis }}</td>
             </tr>

@@ -16,6 +16,8 @@ import com.sbnz.vehicleassessment.model.bc.DeoHijerarhija;
 import com.sbnz.vehicleassessment.model.bc.KompatibilanSa;
 import com.sbnz.vehicleassessment.model.bc.KriticniSklop;
 import com.sbnz.vehicleassessment.model.bc.RezervniDeo;
+import com.sbnz.vehicleassessment.model.enums.TipIndikatora;
+import com.sbnz.vehicleassessment.model.event.ProcenaSteteEvent;
 import com.sbnz.vehicleassessment.repository.AssessmentRecord;
 import com.sbnz.vehicleassessment.repository.AssessmentRepository;
 import org.kie.api.runtime.KieContainer;
@@ -24,6 +26,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,11 +35,14 @@ public class AssessmentService {
 
     private final KieContainer assessmentKieContainer;
     private final AssessmentRepository repository;
+    private final FraudDetectionService fraudDetectionService;
 
     public AssessmentService(@Qualifier("assessmentKieContainer") KieContainer assessmentKieContainer,
-                             AssessmentRepository repository) {
+                             AssessmentRepository repository,
+                             FraudDetectionService fraudDetectionService) {
         this.assessmentKieContainer = assessmentKieContainer;
         this.repository = repository;
+        this.fraudDetectionService = fraudDetectionService;
     }
 
     public AssessmentResponse evaluate(AssessmentRequest request) {
@@ -54,7 +60,9 @@ public class AssessmentService {
             session.fireAllRules();
 
             AssessmentResponse response = collectResponse(session);
-            persist(request.getVozilo(), response);
+            ProcenaSteteEvent event = buildFraudEvent(request, response);
+            response.setFraudAlerti(fraudDetectionService.addEvent(event).getAlerti());
+            persist(request, response);
             return response;
         } finally {
             session.dispose();
@@ -110,17 +118,53 @@ public class AssessmentService {
 
         double ukupno = troskovi.stream().mapToDouble(Trosak::getIznos).sum();
         return new AssessmentResponse(vrednost, ostaci, ukupno, odluka,
-                faktori, troskovi, indikatori, eskalacije, promene);
+                faktori, troskovi, indikatori, eskalacije, promene, new ArrayList<>());
     }
 
-    private void persist(Vozilo v, AssessmentResponse r) {
+    private ProcenaSteteEvent buildFraudEvent(AssessmentRequest request, AssessmentResponse response) {
+        Vozilo v = request.getVozilo();
+        double procenatStete = response.getVrednostVozila() > 0
+                ? (response.getUkupniTroskovi() / response.getVrednostVozila()) * 100.0
+                : 0.0;
+        boolean imaKriticniSklop = response.getIndikatori().stream()
+                .anyMatch(i -> i.getTip() == TipIndikatora.KRITICNA_KOMPONENTA);
+        double naknada = response.getOdluka() != null ? response.getOdluka().getNaknada() : 0.0;
+
+        return new ProcenaSteteEvent(
+                normalize(request.getBrojSasije(), v.getMarka() + "-" + v.getModel()),
+                v.getMarka(),
+                v.getModel(),
+                new Date(),
+                response.getVrednostVozila(),
+                response.getUkupniTroskovi(),
+                procenatStete,
+                response.getOdluka() != null ? response.getOdluka().getTip() : null,
+                request.getOstecenja() != null ? request.getOstecenja().size() : 0,
+                imaKriticniSklop,
+                naknada
+        );
+    }
+
+    private String normalize(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value.trim();
+    }
+
+    private void persist(AssessmentRequest request, AssessmentResponse r) {
+        Vozilo v = request.getVozilo();
         AssessmentRecord rec = new AssessmentRecord();
         rec.setMarka(v.getMarka());
         rec.setModel(v.getModel());
+        rec.setBrojSasije(normalize(request.getBrojSasije(), v.getMarka() + "-" + v.getModel()));
         rec.setNabavnaCena(v.getNabavnaCena());
         rec.setVrednostVozila(r.getVrednostVozila());
         rec.setVrednostOstataka(r.getVrednostOstataka());
         rec.setUkupniTroskovi(r.getUkupniTroskovi());
+        rec.setProcenatStete(r.getVrednostVozila() > 0
+                ? (r.getUkupniTroskovi() / r.getVrednostVozila()) * 100.0
+                : 0.0);
+        rec.setBrojOstecenihDelova(request.getOstecenja() != null ? request.getOstecenja().size() : 0);
+        rec.setImaKriticniSklop(r.getIndikatori().stream()
+                .anyMatch(i -> i.getTip() == TipIndikatora.KRITICNA_KOMPONENTA));
         if (r.getOdluka() != null) {
             rec.setOdluka(r.getOdluka().getTip());
             rec.setNaknada(r.getOdluka().getNaknada());

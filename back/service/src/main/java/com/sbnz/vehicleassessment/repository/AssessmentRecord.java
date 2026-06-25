@@ -33,16 +33,20 @@ public class AssessmentRecord {
     @Column(nullable = false)
     private String model;
 
+    private String brojSasije;
+
     private double nabavnaCena;
     private double vrednostVozila;
     private double vrednostOstataka;
     private double ukupniTroskovi;
+    private double procenatStete;
+    private int brojOstecenihDelova;
+    private boolean imaKriticniSklop;
     private double naknada;
 
     @Enumerated(EnumType.STRING)
     private TipOdluke odluka;
 
-    @Lob
     @Column(length = 4000)
     private String obrazlozenje;
 

@@ -9,7 +9,7 @@ import {
   AssessmentResponse,
   FraudCheckRequest,
   FraudCheckResponse,
-  ZahtevEvent,
+  ProcenaSteteEvent,
 } from '../models/types';
 
 @Injectable({ providedIn: 'root' })
@@ -25,6 +25,12 @@ export class ApiService {
     return this.http.get<AssessmentRecord[]>(`${this.base}/assessments`);
   }
 
+  findAssessmentsByChassis(brojSasije: string): Observable<AssessmentRecord[]> {
+    return this.http.get<AssessmentRecord[]>(
+      `${this.base}/assessments/chassis/${encodeURIComponent(brojSasije)}`,
+    );
+  }
+
   getAssessment(id: number): Observable<AssessmentRecord> {
     return this.http.get<AssessmentRecord>(`${this.base}/assessments/${id}`);
   }
@@ -33,7 +39,7 @@ export class ApiService {
     return this.http.post<FraudCheckResponse>(`${this.base}/fraud/check`, request);
   }
 
-  fraudEvent(event: ZahtevEvent): Observable<FraudCheckResponse> {
+  fraudEvent(event: ProcenaSteteEvent): Observable<FraudCheckResponse> {
     return this.http.post<FraudCheckResponse>(`${this.base}/fraud/event`, event);
   }
 

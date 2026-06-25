@@ -1,6 +1,6 @@
 package com.sbnz.vehicleassessment.dto;
 
-import com.sbnz.vehicleassessment.model.event.ZahtevEvent;
+import com.sbnz.vehicleassessment.model.event.ProcenaSteteEvent;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,5 +11,5 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FraudCheckRequest {
-    private List<ZahtevEvent> zahtevi;
+    private List<ProcenaSteteEvent> procene;
 }

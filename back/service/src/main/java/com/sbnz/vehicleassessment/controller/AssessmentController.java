@@ -39,6 +39,11 @@ public class AssessmentController {
         return repository.findAll();
     }
 
+    @GetMapping("/chassis/{brojSasije}")
+    public List<AssessmentRecord> byChassis(@PathVariable String brojSasije) {
+        return repository.findByBrojSasijeIgnoreCaseOrderByKreiranoDesc(brojSasije);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<AssessmentRecord> get(@PathVariable Long id) {
         return repository.findById(id)

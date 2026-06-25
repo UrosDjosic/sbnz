@@ -159,6 +159,7 @@ input.invalid, select.invalid {
 
 .btn-danger {
   background: var(--danger);
+  margin : 2rem auto;
 }
 
 .btn-danger:hover:not(:disabled) {

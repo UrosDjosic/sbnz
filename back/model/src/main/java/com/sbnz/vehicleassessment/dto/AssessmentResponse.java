@@ -6,6 +6,7 @@ import com.sbnz.vehicleassessment.model.Indikator;
 import com.sbnz.vehicleassessment.model.Odluka;
 import com.sbnz.vehicleassessment.model.PromenaIntervencije;
 import com.sbnz.vehicleassessment.model.Trosak;
+import com.sbnz.vehicleassessment.model.event.FraudAlert;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,4 +26,5 @@ public class AssessmentResponse {
     private List<Indikator> indikatori;
     private List<Eskalacija> eskalacije;
     private List<PromenaIntervencije> promene;
+    private List<FraudAlert> fraudAlerti;
 }

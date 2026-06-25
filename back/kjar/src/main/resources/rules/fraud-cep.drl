@@ -1,51 +1,95 @@
 package rules;
 
-import com.sbnz.vehicleassessment.model.event.ZahtevEvent;
+import com.sbnz.vehicleassessment.model.event.ProcenaSteteEvent;
 import com.sbnz.vehicleassessment.model.event.FraudAlert;
 import com.sbnz.vehicleassessment.model.enums.TipEskalacije;
-import java.util.List;
+import com.sbnz.vehicleassessment.model.enums.TipOdluke;
+import java.lang.Number;
 
 // =========================================================
-// CEP - detekcija sumnjivih obrazaca u zahtevima
+// CEP - nadzor nad istorijom stvarnih procena stete
 // =========================================================
 
-rule "OBRAZAC 1 - Dva zahteva istog vlasnika za razlicita vozila u 30 dana"
+rule "CEP 1 - Ponavljane totalne stete za istu sasiju u 180 dana"
 when
-    $z1 : ZahtevEvent($vlasnik : vlasnikId, $vozilo1 : voziloBroj)
-    $z2 : ZahtevEvent(vlasnikId == $vlasnik, voziloBroj != $vozilo1,
-                      this after[1s, 30d] $z1)
-    not FraudAlert(vlasnikId == $vlasnik,
-                   opis == "Dva zahteva za razlicita vozila u 30 dana")
+    $p1 : ProcenaSteteEvent(
+        $sasija : brojSasije,
+        tipOdluke == TipOdluke.TOTALNA_STETA
+    )
+    $p2 : ProcenaSteteEvent(
+        brojSasije == $sasija,
+        tipOdluke == TipOdluke.TOTALNA_STETA,
+        this after[1s, 180d] $p1
+    )
+    not FraudAlert(
+        brojSasije == $sasija,
+        opis == "Ponavljane totalne stete za istu sasiju u 180 dana"
+    )
 then
-    insert(new FraudAlert($vlasnik,
-        "Dva zahteva za razlicita vozila u 30 dana",
+    insert(new FraudAlert($sasija,
+        "Ponavljane totalne stete za istu sasiju u 180 dana",
+        TipEskalacije.ESKALACIJA));
+end
+
+rule "CEP 2 - Tri visokorizicne procene za istu sasiju u 12 meseci"
+when
+    $p : ProcenaSteteEvent($sasija : brojSasije)
+    Number(intValue >= 3) from accumulate(
+        ProcenaSteteEvent(
+            brojSasije == $sasija,
+            procenatStete >= 70.0
+        ) over window:time(365d),
+        count(1)
+    )
+    not FraudAlert(
+        brojSasije == $sasija,
+        opis == "Tri visokorizicne procene za istu sasiju u 12 meseci"
+    )
+then
+    insert(new FraudAlert($sasija,
+        "Tri visokorizicne procene za istu sasiju u 12 meseci",
         TipEskalacije.PROVERA));
 end
 
-rule "OBRAZAC 2 - Vise od 3 zahteva za isto vozilo u 12 meseci (sliding window)"
+rule "CEP 3 - Akumulirana manja potrazivanja u 90 dana"
 when
-    $z : ZahtevEvent($vozilo : voziloBroj)
-    $lista : List(size >= 3) from collect(
-        ZahtevEvent(voziloBroj == $vozilo) over window:time(365d)
+    $p : ProcenaSteteEvent($sasija : brojSasije)
+    Number(doubleValue > 3000.0) from accumulate(
+        ProcenaSteteEvent(
+            brojSasije == $sasija,
+            $n : naknada,
+            naknada > 0.0,
+            naknada < 1000.0
+        ) over window:time(90d),
+        sum($n)
     )
-    not FraudAlert(opis == ("Ucestalost zahteva za vozilo " + $vozilo))
+    not FraudAlert(
+        brojSasije == $sasija,
+        opis == "Akumulirana manja potrazivanja u 90 dana"
+    )
 then
-    insert(new FraudAlert(null,
-        "Ucestalost zahteva za vozilo " + $vozilo,
-        TipEskalacije.ESKALACIJA));
+    insert(new FraudAlert($sasija,
+        "Akumulirana manja potrazivanja u 90 dana",
+        TipEskalacije.PROVERA));
 end
 
-rule "OBRAZAC 3 - Visok iznos zahteva u kratkom periodu od aktiviranja polise"
-    // Treci obrazac koristi akumulaciju i sliding window
+rule "CEP 4 - Kriticni sklop kod ponovljene procene iste sasije"
 when
-    $z : ZahtevEvent($vlasnik : vlasnikId, $iznos : iznosZahteva)
-    Number(doubleValue > 100000) from accumulate(
-        $zh : ZahtevEvent(vlasnikId == $vlasnik) over window:time(7d),
-        sum($zh.getIznosZahteva())
+    $p1 : ProcenaSteteEvent(
+        $sasija : brojSasije,
+        imaKriticniSklop == true
     )
-    not FraudAlert(vlasnikId == $vlasnik, opis == "Akumulirani iznos zahteva preko 100000 RSD u 7 dana")
+    $p2 : ProcenaSteteEvent(
+        brojSasije == $sasija,
+        imaKriticniSklop == true,
+        this after[1s, 180d] $p1
+    )
+    not FraudAlert(
+        brojSasije == $sasija,
+        opis == ("Ponovljena ostecenja kriticnih sklopova za sasiju " + $sasija)
+    )
 then
-    insert(new FraudAlert($vlasnik,
-        "Akumulirani iznos zahteva preko 100000 RSD u 7 dana",
-        TipEskalacije.ESKALACIJA));
+    insert(new FraudAlert($sasija,
+        "Ponovljena ostecenja kriticnih sklopova za sasiju " + $sasija,
+        TipEskalacije.STRUCNA_PROVERA));
 end

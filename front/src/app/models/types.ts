@@ -30,6 +30,7 @@ export interface OstecenoVozilo {
 }
 
 export interface AssessmentRequest {
+  brojSasije: string;
   vozilo: Vozilo;
   ostecenja: OstecenoVozilo[];
 }
@@ -78,37 +79,49 @@ export interface AssessmentResponse {
   indikatori: Indikator[];
   eskalacije: Eskalacija[];
   promene: PromenaIntervencije[];
+  fraudAlerti: FraudAlert[];
 }
 
 export interface AssessmentRecord {
   id: number;
+  brojSasije: string;
   marka: string;
   model: string;
   nabavnaCena: number;
   vrednostVozila: number;
   vrednostOstataka: number;
   ukupniTroskovi: number;
+  procenatStete: number;
+  brojOstecenihDelova: number;
+  imaKriticniSklop: boolean;
   naknada: number;
   odluka: TipOdluke | null;
   obrazlozenje: string | null;
   kreirano: string;
 }
 
-export interface ZahtevEvent {
-  vlasnikId: string;
-  voziloBroj: string;
-  iznosZahteva: number;
-  vremeZahteva: string;
+export interface ProcenaSteteEvent {
+  brojSasije: string;
+  marka: string;
+  model: string;
+  vremeProcene: string;
+  vrednostVozila: number;
+  ukupniTroskovi: number;
+  procenatStete: number;
+  tipOdluke: TipOdluke | null;
+  brojOstecenihDelova: number;
+  imaKriticniSklop: boolean;
+  naknada: number;
 }
 
 export interface FraudAlert {
-  vlasnikId: string;
+  brojSasije: string;
   opis: string;
   nivo: TipEskalacije;
 }
 
 export interface FraudCheckRequest {
-  zahtevi: ZahtevEvent[];
+  procene: ProcenaSteteEvent[];
 }
 
 export interface FraudCheckResponse {

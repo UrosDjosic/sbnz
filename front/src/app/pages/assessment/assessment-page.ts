@@ -47,6 +47,7 @@ export class AssessmentPage {
   result = signal<AssessmentResponse | null>(null);
 
   form: FormGroup = this.fb.group({
+    brojSasije: ['VF1RFA00362500001', Validators.required],
     vozilo: this.fb.group({
       marka: ['Kia', [Validators.required]],
       model: ['Ceed', [Validators.required]],
@@ -127,6 +128,7 @@ export class AssessmentPage {
 
   fillExample(): void {
     this.form.patchValue({
+      brojSasije: 'WBAKS410500C12345',
       vozilo: {
         marka: 'BMW',
         model: 'X5',
@@ -180,6 +182,7 @@ export class AssessmentPage {
     this.ostecenja.clear();
     this.ostecenja.push(this.createDamage());
     this.form.reset({
+      brojSasije: 'VF1RFA00362500001',
       vozilo: {
         marka: 'Kia',
         model: 'Ceed',

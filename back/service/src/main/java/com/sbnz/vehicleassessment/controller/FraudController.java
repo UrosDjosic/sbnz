@@ -2,7 +2,7 @@ package com.sbnz.vehicleassessment.controller;
 
 import com.sbnz.vehicleassessment.dto.FraudCheckRequest;
 import com.sbnz.vehicleassessment.dto.FraudCheckResponse;
-import com.sbnz.vehicleassessment.model.event.ZahtevEvent;
+import com.sbnz.vehicleassessment.model.event.ProcenaSteteEvent;
 import com.sbnz.vehicleassessment.service.FraudDetectionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -28,7 +28,7 @@ public class FraudController {
     }
 
     @PostMapping("/event")
-    public ResponseEntity<FraudCheckResponse> event(@RequestBody ZahtevEvent z) {
+    public ResponseEntity<FraudCheckResponse> event(@RequestBody ProcenaSteteEvent z) {
         return ResponseEntity.ok(service.addEvent(z));
     }
 }

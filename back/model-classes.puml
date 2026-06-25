@@ -6,6 +6,8 @@ skinparam classBorderThickness 1
 hide empty members
 
 class AssessmentRequest {
+    - vlasnikId : String
+    - voziloBroj : String
     - vozilo : Vozilo
     - ostecenja : List<OstecenoVozilo>
 }
@@ -20,10 +22,11 @@ class AssessmentResponse {
     - indikatori : List<Indikator>
     - eskalacije : List<Eskalacija>
     - promene : List<PromenaIntervencije>
+    - fraudAlerti : List<FraudAlert>
 }
 
 class FraudCheckRequest {
-    - zahtevi : List<ZahtevEvent>
+    - procene : List<ProcenaSteteEvent>
 }
 
 class FraudCheckResponse {
@@ -142,11 +145,19 @@ class FraudAlert {
     - nivo : TipEskalacije
 }
 
-class ZahtevEvent <<event>> {
+class ProcenaSteteEvent <<event>> {
     - vlasnikId : String
     - voziloBroj : String
-    - iznosZahteva : double
-    - vremeZahteva : Date
+    - marka : String
+    - model : String
+    - vremeProcene : Date
+    - vrednostVozila : double
+    - ukupniTroskovi : double
+    - procenatStete : double
+    - tipOdluke : TipOdluke
+    - brojOstecenihDelova : int
+    - imaKriticniSklop : boolean
+    - naknada : double
 }
 
 enum KvalitetPopravki {
@@ -203,7 +214,8 @@ AssessmentResponse o-- "0..*" Trosak
 AssessmentResponse o-- "0..*" Indikator
 AssessmentResponse o-- "0..*" Eskalacija
 AssessmentResponse o-- "0..*" PromenaIntervencije
-FraudCheckRequest o-- "0..*" ZahtevEvent
+AssessmentResponse o-- "0..*" FraudAlert
+FraudCheckRequest o-- "0..*" ProcenaSteteEvent
 FraudCheckResponse o-- "0..*" FraudAlert
 
 Vozilo --> TipKoriscenja

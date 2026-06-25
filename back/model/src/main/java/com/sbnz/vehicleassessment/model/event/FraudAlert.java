@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class FraudAlert {
-    private String vlasnikId;
+    private String brojSasije;
     private String opis;
     private TipEskalacije nivo;
 }

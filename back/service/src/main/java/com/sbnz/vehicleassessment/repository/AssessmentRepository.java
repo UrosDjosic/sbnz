@@ -10,4 +10,5 @@ import java.util.List;
 public interface AssessmentRepository extends JpaRepository<AssessmentRecord, Long> {
     List<AssessmentRecord> findByOdluka(TipOdluke odluka);
     List<AssessmentRecord> findByMarka(String marka);
+    List<AssessmentRecord> findByBrojSasijeIgnoreCaseOrderByKreiranoDesc(String brojSasije);
 }
